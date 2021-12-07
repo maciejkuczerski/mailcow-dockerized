@@ -2,7 +2,7 @@
 [[ -f mailcow.conf ]] && source mailcow.conf
 [[ -f ../mailcow.conf ]] && source ../mailcow.conf
 
-if [[ -z ${DBUSER} ]] || [[ -z ${DBPASS} ]] || [[ -z ${DBNAME} ]]; then
+if [[ -z ${DBUSER} ]] || [[ -z ${DBPASS} ]] || [[ -z ${DBNAME} ]] || [[ -z ${COMPOSE_PROJECT_NAME} ]]; then
 	echo "Cannot find mailcow.conf, make sure this script is run from within the mailcow folder."
 	exit 1
 fi
@@ -20,11 +20,11 @@ response=${response,,}    # tolower
 if [[ "$response" =~ ^(yes|y)$ ]]; then
 	echo -e "\nWorking, please wait..."
   random=$(</dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-16})
-  password=$(docker exec -it $(docker ps -qf name=dovecot-mailcow) doveadm pw -s SSHA256 -p ${random} | tr -d '\r')
-	docker exec -it $(docker ps -qf name=mysql-mailcow) mysql -u${DBUSER} -p${DBPASS} ${DBNAME} -e "DELETE FROM admin WHERE username='admin';"
-  docker exec -it $(docker ps -qf name=mysql-mailcow) mysql -u${DBUSER} -p${DBPASS} ${DBNAME} -e "DELETE FROM domain_admins WHERE username='admin';"
-	docker exec -it $(docker ps -qf name=mysql-mailcow) mysql -u${DBUSER} -p${DBPASS} ${DBNAME} -e "INSERT INTO admin (username, password, superadmin, active) VALUES ('admin', '${password}', 1, 1);"
-	docker exec -it $(docker ps -qf name=mysql-mailcow) mysql -u${DBUSER} -p${DBPASS} ${DBNAME} -e "DELETE FROM tfa WHERE username='admin';"
+  password=$(docker exec -it $(docker ps -qf name=${COMPOSE_PROJECT_NAME}_dovecot-mailcow) doveadm pw -s SSHA256 -p ${random} | tr -d '\r')
+	docker exec -it $(docker ps -qf name=${COMPOSE_PROJECT_NAME}_mysql-mailcow) mysql -u${DBUSER} -p${DBPASS} ${DBNAME} -e "DELETE FROM admin WHERE username='admin';"
+  docker exec -it $(docker ps -qf name=${COMPOSE_PROJECT_NAME}_mysql-mailcow) mysql -u${DBUSER} -p${DBPASS} ${DBNAME} -e "DELETE FROM domain_admins WHERE username='admin';"
+	docker exec -it $(docker ps -qf name=${COMPOSE_PROJECT_NAME}_mysql-mailcow) mysql -u${DBUSER} -p${DBPASS} ${DBNAME} -e "INSERT INTO admin (username, password, superadmin, active) VALUES ('admin', '${password}', 1, 1);"
+	docker exec -it $(docker ps -qf name=${COMPOSE_PROJECT_NAME}_mysql-mailcow) mysql -u${DBUSER} -p${DBPASS} ${DBNAME} -e "DELETE FROM tfa WHERE username='admin';"
 	echo "
 Reset credentials:
 ---
